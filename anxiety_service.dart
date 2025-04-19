@@ -18,9 +18,17 @@ class AnxietyService {
     );
 
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
+      // final data = json.decode(response.body);
+      // return {
+      //   "response": data['output'] ?? "No response received"
+      // }
+       final data = json.decode(response.body);
+
+      // Safely access nested `output` > `content`
+      final content = data['output']?['content'] ?? data['content'] ?? "No content found";
+
       return {
-        "response": data['output'] ?? "No response received"
+        "response": content
       };
     } else {
       throw Exception('Failed to fetch response: ${response.body}');

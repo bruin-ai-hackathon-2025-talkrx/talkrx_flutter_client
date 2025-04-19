@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'anxiety_service.dart'; // ✅ Updated to use your existing backend wrapper
+import 'anxiety_service.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -25,7 +25,12 @@ class _ChatPageState extends State<ChatPage> {
 
     try {
       final result = await AnxietyService.getAnxietyExtraction(userInput);
-      final aiMessage = result['response'] ?? 'No response received';
+      print("👉 result = $result");
+      print("👉 result['response'] runtimeType = ${result['response'].runtimeType}");
+
+      
+      // Use .toString() in case the value is not a string
+      final aiMessage = result['response']?.toString() ?? 'No response received';
 
       setState(() {
         _messages.add({'role': 'ai', 'message': aiMessage});
@@ -54,7 +59,7 @@ class _ChatPageState extends State<ChatPage> {
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
-          message['message']!,
+          message['message'].toString(), // Always safely convert to string
           style: const TextStyle(color: Colors.white),
         ),
       ),

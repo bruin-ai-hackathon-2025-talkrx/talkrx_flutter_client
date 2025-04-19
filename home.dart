@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-// import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-
 class Home extends StatefulWidget {
   const Home({super.key});
 
@@ -14,9 +12,10 @@ class _HomeState extends State<Home> {
 
   void _onItemTapped(int index) {
     if (index == 1) {
-      // 🔁 This is the Chat icon's index
-      Navigator.pushNamed(context, '/chat'); // Make sure to define this route later
-    } else {
+      Navigator.pushNamed(context, '/chat');
+    } else if (index == 2) {
+    Navigator.pushNamed(context, '/insights');
+  } else {
       setState(() {
         _selectedIndex = index;
       });
@@ -29,12 +28,26 @@ class _HomeState extends State<Home> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+              )
+            : null,
         title: const Text("Consultation", style: TextStyle(color: Colors.white)),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              backgroundImage: AssetImage('assets/profile.jpg'),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(40),
+              onTap: () {
+                Navigator.pushNamed(context, '/profile');
+              },
+              child: const CircleAvatar(
+                backgroundImage: AssetImage('assets/profile.jpg'),
+              ),
             ),
           ),
         ],
@@ -44,7 +57,6 @@ class _HomeState extends State<Home> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Search Bar
             TextField(
               decoration: InputDecoration(
                 hintText: 'Type here to start a conversation with the AI agent...',
@@ -60,12 +72,9 @@ class _HomeState extends State<Home> {
               style: const TextStyle(color: Colors.white),
             ),
             const SizedBox(height: 20),
-
-            // Insights Session Section
             _buildSectionTitle("Insights session", trailing: "Review past"),
             _buildInsightTile("Personalized advice"),
             _buildInsightTile("Heart health assessment"),
-
             const SizedBox(height: 20),
             _buildSectionTitle("Prescribed medications", trailing: "View all"),
             _buildIconGrid([
@@ -73,7 +82,6 @@ class _HomeState extends State<Home> {
               _gridItem(Icons.spa, "Relaxation"),
               _gridItem(Icons.medication, "Mood stabilizers"),
             ]),
-
             const SizedBox(height: 20),
             _buildSectionTitle("AI agent locator", trailing: "View all"),
             _buildIconGrid([
@@ -96,6 +104,7 @@ class _HomeState extends State<Home> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat'),
+          BottomNavigationBarItem(icon: Icon(Icons.analytics), label: 'Insights')
         ],
       ),
     );
@@ -160,9 +169,11 @@ class _HomeState extends State<Home> {
         children: [
           Icon(icon, color: Colors.white, size: 32),
           const SizedBox(height: 8),
-          Text(label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
+          ),
         ],
       ),
     );
