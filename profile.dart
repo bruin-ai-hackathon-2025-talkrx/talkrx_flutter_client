@@ -78,7 +78,7 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
             const SizedBox(height: 20),
             const CircleAvatar(
               radius: 60,
-              backgroundImage: AssetImage('assets/images/water_pk.png'),
+              backgroundImage: AssetImage('assets/water_pk.png'),
             ),
             const SizedBox(height: 20),
             _buildEditableField('Name', _nameController, CupertinoIcons.person),

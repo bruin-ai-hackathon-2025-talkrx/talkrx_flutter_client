@@ -9,13 +9,31 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   int _selectedIndex = 0;
+  int? _lastConversationId;
 
-  void _onItemTapped(int index) {
+  void _onItemTapped(int index) async {
     if (index == 1) {
-      Navigator.pushNamed(context, '/chat');
+      final conversationId = await Navigator.pushNamed(context, '/chat');
+      if (conversationId is int) {
+        setState(() {
+          _lastConversationId = conversationId;
+        });
+      }
     } else if (index == 2) {
-    Navigator.pushNamed(context, '/insights');
-  } else {
+      if (_lastConversationId != null) {
+        Navigator.pushNamed(
+          context,
+          '/insights',
+          arguments: _lastConversationId,
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("No conversation found. Start chatting first."),
+          ),
+        );
+      }
+    } else {
       setState(() {
         _selectedIndex = index;
       });
@@ -114,7 +132,8 @@ class _HomeState extends State<Home> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(title,
+            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
         if (trailing != null)
           Text(trailing, style: const TextStyle(color: Colors.white70)),
       ],

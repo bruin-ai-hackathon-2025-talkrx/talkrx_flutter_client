@@ -10,18 +10,66 @@ class InsightsPage extends StatefulWidget {
 }
 
 class _InsightsPageState extends State<InsightsPage> {
-  final TextEditingController _controller = TextEditingController();
   Map<String, dynamic>? _output;
   bool _isLoading = false;
   String? _error;
+  int? _conversationId;
 
-  Future<void> _analyzeText(String inputText) async {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is int) {
+        _conversationId = args;
+        _fetchAndAnalyzeSavedConversation();
+      } else {
+        setState(() {
+          _error = "Missing or invalid conversation ID.";
+        });
+      }
+    });
+  }
+
+  Future<void> _fetchAndAnalyzeSavedConversation() async {
+    if (_conversationId == null) return;
+
     setState(() {
       _isLoading = true;
-      _output = null;
       _error = null;
+      _output = null;
     });
 
+    try {
+      final getResponse = await http.get(
+        Uri.parse('http://172.93.55.84:8074/conversation?table_col=conversation_id&field_value=$_conversationId'),
+        headers: {'accept': 'application/json'},
+      );
+
+      if (getResponse.statusCode == 200) {
+        final data = jsonDecode(getResponse.body);
+        final contextText = data['context']?.first ?? '';
+        final responseText = data['response']?.first ?? '';
+        final fullConversation = '$contextText\n$responseText';
+
+        await _analyzeText(fullConversation);
+      } else {
+        setState(() {
+          _error = 'Error fetching conversation: ${getResponse.statusCode}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Exception while fetching conversation: $e';
+      });
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _analyzeText(String inputText) async {
     try {
       final response = await http.post(
         Uri.parse('http://172.93.55.84:8074/patient_anxiety_extractor'),
@@ -44,13 +92,9 @@ class _InsightsPageState extends State<InsightsPage> {
       }
     } catch (e) {
       setState(() {
-        _error = 'Exception: $e';
+        _error = 'Exception during analysis: $e';
       });
     }
-
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   Widget _buildList(String title, List<dynamic>? items) {
@@ -80,64 +124,41 @@ class _InsightsPageState extends State<InsightsPage> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: _isLoading ? null : _fetchAndAnalyzeSavedConversation,
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _controller,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: "Enter your conversation text...",
-                hintStyle: const TextStyle(color: Colors.white54),
-                filled: true,
-                fillColor: Colors.grey[850],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () => _analyzeText(_controller.text),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text("Analyze"),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator(color: Colors.red))
-                  : _error != null
-                      ? Text(_error!, style: const TextStyle(color: Colors.redAccent))
-                      : _output == null
-                          ? const Text("No insights yet", style: TextStyle(color: Colors.white))
-                          : SingleChildScrollView(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (_output?['anxiety_disorder_name'] != null)
-                                    Padding(
-                                      padding: const EdgeInsets.only(bottom: 16),
-                                      child: Text(
-                                        "Disorder: ${_output!['anxiety_disorder_name']}",
-                                        style: const TextStyle(
-                                            color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                                      ),
-                                    ),
-                                  _buildList("Emotions", _output?['emotions']),
-                                  _buildList("Problems Identified", _output?['problems']),
-                                  _buildList("Problem Evidence", _output?['problem_evidence']),
-                                  _buildList("Recommendations", _output?['recommendations']),
-                                ],
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: Colors.red))
+            : _error != null
+                ? Text(_error!, style: const TextStyle(color: Colors.redAccent))
+                : _output == null
+                    ? const Text("No insights yet", style: TextStyle(color: Colors.white))
+                    : SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (_output?['anxiety_disorder_name'] != null)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: Text(
+                                  "Disorder: ${_output!['anxiety_disorder_name']}",
+                                  style: const TextStyle(
+                                      color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
                               ),
-                            ),
-            ),
-          ],
-        ),
+                            _buildList("Emotions", _output?['emotions']),
+                            _buildList("Problems Identified", _output?['problems']),
+                            _buildList("Problem Evidence", _output?['problem_evidence']),
+                            _buildList("Recommendations", _output?['recommendations']),
+                          ],
+                        ),
+                      ),
       ),
     );
   }
